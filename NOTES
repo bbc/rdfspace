@@ -1,0 +1,6 @@
+Right now, it will never count things one edge away as similar. They need
+to have some other paths between them.
+This is due to the way the adjacency matrix is computed. 
+If you have a graph { 0 <-> 1 }, then the adjacency matrix is ((0, 1), (1, 0).
+Therefore 0 and 1 have nothing in common.
+Making the adjacency matrix A such that A[i, i] = 1 would change that behavior.
