@@ -45,8 +45,14 @@ class Space(object):
         for statement in stream:
             p = str(statement.predicate.uri)
             if statement.object.is_resource() and (not self._predicates or p in self._predicates) and p not in self._ignored_predicates:
-                s = str(statement.subject.uri)
-                o = str(statement.object.uri)
+                if statement.subject.is_blank():
+                    s = str(statement.subject)
+                else:
+                    s = str(statement.subject.uri)
+                if statement.object.is_blank():
+                    o = str(statement.object)
+                else:
+                    o = str(statement.object.uri)
                 if not uri_index.has_key(s):
                     uri_index[s] = i
                     i += 1
@@ -120,9 +126,10 @@ class Space(object):
                 indexes.append(self.uri_index[uri])
         return self.centroid_ij(indexes)
 
-    def similar(self, v, limit=10):
+    def similar(self, uri, limit=10):
         projected = self.projections()
         similarities = {}
+        v = projected[self.uri_index[uri]]
         for key in self.uri_index.keys():
             similarities[key] = self.cosine(v, projected[self.uri_index[key]])
         similarities = sorted(similarities.items(), key=itemgetter(1))
