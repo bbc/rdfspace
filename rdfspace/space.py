@@ -11,12 +11,13 @@ import os
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=[], predicates=None, rank=50):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=[], predicates=None, rank=50, ignore_inverse=True):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
         self._predicates = predicates
         self._rank = rank
+        self._ignore_inverse = ignore_inverse
         self._adjacency  = None
         self.uri_index = None
         self._ut = None
@@ -60,19 +61,21 @@ class Space(object):
                     uri_index[o] = i
                     i += 1
                 ij.append([uri_index[s], uri_index[o]])
-                ij.append([uri_index[o], uri_index[s]])
+                if not self._ignore_inverse:
+                    ij.append([uri_index[o], uri_index[s]])
                 if norms.has_key(uri_index[o]):
                     norms[uri_index[o]].append(k)
                 else:
                     norms[uri_index[o]] = [k]
                 data.append(1.0)
                 k += 1
-                if norms.has_key(uri_index[s]):
-                    norms[uri_index[s]].append(k)
-                else:
-                    norms[uri_index[s]] = [k]
-                data.append(1.0)
-                k += 1
+                if not self._ignore_inverse:
+                    if norms.has_key(uri_index[s]):
+                        norms[uri_index[s]].append(k)
+                    else:
+                        norms[uri_index[s]] = [k]
+                    data.append(1.0)
+                    k += 1
             z += 1
             if z % 100000 == 0:
                 print "Processed " + str(z) + " triples..."
@@ -101,6 +104,8 @@ class Space(object):
         return self.uri_index[uri]
 
     def cosine(self, v1, v2):
+        if norm(v1) == 0 or norm(v2) == 0:
+            return 0
         return dot(v1, v2.T) / (norm(v1) * norm(v2))
 
     def distance_ij(self, i, j):

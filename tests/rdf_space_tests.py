@@ -5,7 +5,7 @@ import rdfspace
 from rdfspace.space import Space
 
 def test_init():
-    rdf_space = Space('tests/example.n3')
+    rdf_space = Space('tests/example.n3', ignore_inverse=False)
     assert_equal(rdf_space._path_to_rdf, 'file:tests/example.n3')
     assert_equal(rdf_space._format, 'ntriples')
     assert_equal(rdf_space._ignored_predicates, [])
