@@ -15,15 +15,16 @@ def test_init():
         'http://dbpedia.org/resource/Category:Categories_named_after_television_series': 1,
         'http://dbpedia.org/resource/Category:Futurama': 2,
         'http://dbpedia.org/resource/Category:New_York_City_in_fiction': 3,
+        'http://dbpedia.org/resource/Category:Comic_science_fiction': 4,
     })
-    assert_equal(rdf_space._adjacency.shape, (4, 4))
+    assert_equal(rdf_space._adjacency.shape, (5, 5))
     assert_equal(rdf_space._adjacency[0,0], 0)
     assert_equal(rdf_space._adjacency[0,1], 1/np.sqrt(2))
     assert_equal(rdf_space._adjacency[0,2], 0)
     assert_equal(rdf_space._adjacency[0,3], 0)
     assert_equal(rdf_space._adjacency[1,0], 1)
     assert_equal(rdf_space._adjacency[1,1], 0)
-    assert_equal(rdf_space._adjacency[1,2], 1/np.sqrt(2))
+    assert_equal(rdf_space._adjacency[1,2], 1/np.sqrt(3))
     assert_equal(rdf_space._adjacency[1,3], 0)
     assert_equal(rdf_space._adjacency[2,0], 0)
     assert_equal(rdf_space._adjacency[2,1], 1/np.sqrt(2))
@@ -31,12 +32,20 @@ def test_init():
     assert_equal(rdf_space._adjacency[2,3], 1)
     assert_equal(rdf_space._adjacency[3,0], 0)
     assert_equal(rdf_space._adjacency[3,1], 0)
-    assert_equal(rdf_space._adjacency[3,2], 1/np.sqrt(2))
+    assert_equal(rdf_space._adjacency[3,2], 1/np.sqrt(3))
     assert_equal(rdf_space._adjacency[3,3], 0)
+    assert_equal(rdf_space._adjacency[4,0], 0)
+    assert_equal(rdf_space._adjacency[4,1], 0)
+    assert_equal(rdf_space._adjacency[4,2], 1/np.sqrt(3))
+    assert_equal(rdf_space._adjacency[4,3], 0)
 
 def test_index():
     rdf_space = Space('tests/example.n3')
     assert_equal(rdf_space.index('http://dbpedia.org/resource/Category:Futurama'), 2)
+
+def test_to_vector():
+    rdf_space = Space('tests/example.n3', rank=2)
+    assert_equal(rdf_space.to_vector('http://dbpedia.org/resource/Category:Futurama').shape, (2,))
 
 def test_distance():
     rdf_space = Space('tests/example.n3')

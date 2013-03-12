@@ -131,6 +131,9 @@ class Space(object):
                 indexes.append(self.uri_index[uri])
         return self.centroid_ij(indexes)
 
+    def to_vector(self, uri):
+        return self.projections()[self.uri_index[uri]]
+
     def similar(self, uri, limit=10):
         projected = self.projections()
         similarities = {}
