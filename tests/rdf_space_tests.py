@@ -8,7 +8,7 @@ def test_init():
     rdf_space = Space('tests/example.n3', ignore_inverse=False)
     assert_equal(rdf_space._path_to_rdf, 'file:tests/example.n3')
     assert_equal(rdf_space._format, 'ntriples')
-    assert_equal(rdf_space._ignored_predicates, [])
+    assert_equal(rdf_space._ignored_predicates, ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'])
     assert_equal(rdf_space._predicates, None)
     assert_equal(rdf_space.uri_index, {
         'http://dbpedia.org/resource/Category:Star_Trek': 0,
