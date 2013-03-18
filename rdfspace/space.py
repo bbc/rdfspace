@@ -11,7 +11,7 @@ import os
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type'], predicates=None, rank=50, ignore_inverse=True):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=True):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
