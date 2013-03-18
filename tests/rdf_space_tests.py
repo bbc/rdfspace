@@ -1,5 +1,6 @@
 from nose.tools import *
 import numpy as np
+from numpy.linalg import *
 from numpy.testing import *
 import rdfspace
 from rdfspace.space import Space
@@ -17,27 +18,34 @@ def test_init():
         'http://dbpedia.org/resource/Category:New_York_City_in_fiction': 3,
         'http://dbpedia.org/resource/Category:Comic_science_fiction': 4,
     })
+    assert_equal(rdf_space._adjacency_value, 1.0)
+    assert_equal(rdf_space._diagonal_value, 10.0)
     assert_equal(rdf_space._adjacency.shape, (5, 5))
-    assert_equal(rdf_space._adjacency[0,0], 0)
-    assert_equal(rdf_space._adjacency[0,1], 1/np.sqrt(2))
+    assert_equal(rdf_space._adjacency[0,0], 10/np.sqrt(10 ** 2 + 1))
+    assert_equal(rdf_space._adjacency[0,1], 1/np.sqrt(10 ** 2 + 2))
     assert_equal(rdf_space._adjacency[0,2], 0)
     assert_equal(rdf_space._adjacency[0,3], 0)
-    assert_equal(rdf_space._adjacency[1,0], 1)
-    assert_equal(rdf_space._adjacency[1,1], 0)
-    assert_equal(rdf_space._adjacency[1,2], 1/np.sqrt(3))
+    assert_equal(rdf_space._adjacency[0,4], 0)
+    assert_equal(rdf_space._adjacency[1,0], 1/np.sqrt(10 ** 2 + 1))
+    assert_equal(rdf_space._adjacency[1,1], 10/np.sqrt(10 ** 2 + 2))
+    assert_equal(rdf_space._adjacency[1,2], 1/np.sqrt(10 ** 2 + 3))
     assert_equal(rdf_space._adjacency[1,3], 0)
+    assert_equal(rdf_space._adjacency[1,4], 0)
     assert_equal(rdf_space._adjacency[2,0], 0)
-    assert_equal(rdf_space._adjacency[2,1], 1/np.sqrt(2))
-    assert_equal(rdf_space._adjacency[2,2], 0)
-    assert_equal(rdf_space._adjacency[2,3], 1)
+    assert_equal(rdf_space._adjacency[2,1], 1/np.sqrt(10 ** 2 + 2))
+    assert_equal(rdf_space._adjacency[2,2], 10/np.sqrt(10 ** 2 + 3))
+    assert_equal(rdf_space._adjacency[2,3], 1/np.sqrt(10 ** 2 + 1))
+    assert_equal(rdf_space._adjacency[2,4], 1/np.sqrt(10 ** 2 + 1))
     assert_equal(rdf_space._adjacency[3,0], 0)
     assert_equal(rdf_space._adjacency[3,1], 0)
-    assert_equal(rdf_space._adjacency[3,2], 1/np.sqrt(3))
-    assert_equal(rdf_space._adjacency[3,3], 0)
+    assert_equal(rdf_space._adjacency[3,2], 1/np.sqrt(10 ** 2 + 3))
+    assert_equal(rdf_space._adjacency[3,3], 10/np.sqrt(10 ** 2 + 1))
+    assert_equal(rdf_space._adjacency[3,4], 0)
     assert_equal(rdf_space._adjacency[4,0], 0)
     assert_equal(rdf_space._adjacency[4,1], 0)
-    assert_equal(rdf_space._adjacency[4,2], 1/np.sqrt(3))
+    assert_equal(rdf_space._adjacency[4,2], 1/np.sqrt(10 ** 2 + 3))
     assert_equal(rdf_space._adjacency[4,3], 0)
+    assert_equal(rdf_space._adjacency[4,4], 10/np.sqrt(10 ** 2 + 1))
 
 def test_index():
     rdf_space = Space('tests/example.n3')

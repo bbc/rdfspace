@@ -11,12 +11,14 @@ import os
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=True):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=True, adjacency_value=1.0, diagonal_value=10.0):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
         self._predicates = predicates
         self._rank = rank
+        self._adjacency_value = adjacency_value
+        self._diagonal_value = diagonal_value
         self._ignore_inverse = ignore_inverse
         self._adjacency  = None
         self.uri_index = None
@@ -56,25 +58,27 @@ class Space(object):
                     o = str(statement.object.uri)
                 if not uri_index.has_key(s):
                     uri_index[s] = i
+                    ij.append([i, i])
+                    data.append(self._diagonal_value)
+                    norms[i] = [k]
+                    k += 1
                     i += 1
                 if not uri_index.has_key(o):
                     uri_index[o] = i
+                    ij.append([i, i])
+                    data.append(self._diagonal_value)
+                    norms[i] = [k]
+                    k += 1
                     i += 1
                 ij.append([uri_index[s], uri_index[o]])
                 if not self._ignore_inverse:
                     ij.append([uri_index[o], uri_index[s]])
-                if norms.has_key(uri_index[o]):
                     norms[uri_index[o]].append(k)
-                else:
-                    norms[uri_index[o]] = [k]
-                data.append(1.0)
+                data.append(self._adjacency_value)
                 k += 1
                 if not self._ignore_inverse:
-                    if norms.has_key(uri_index[s]):
-                        norms[uri_index[s]].append(k)
-                    else:
-                        norms[uri_index[s]] = [k]
-                    data.append(1.0)
+                    norms[uri_index[s]].append(k)
+                    data.append(self._adjacency_value)
                     k += 1
             z += 1
             if z % 100000 == 0:
@@ -82,7 +86,9 @@ class Space(object):
 
         print "Normalising..."
         for m in norms.keys():
-            p = 1.0 / sqrt(len(norms[m]))
+            values = [ self._adjacency_value for x in range(0, len(norms[m]) - 1) ]
+            values.append(self._diagonal_value)
+            p = 1.0 / norm(values)
             # should I switch to Log Entropy weighting functions?
             # norm = (1 + p * log(p) * i / log(i))
             for n in norms[m]:
