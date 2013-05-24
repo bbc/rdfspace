@@ -41,6 +41,7 @@ class Space(object):
         data = []
         ij = []
         norms = {}
+        ij_exists = {}
 
         i = 0
         z = 0
@@ -60,6 +61,7 @@ class Space(object):
                     uri_index[s] = i
                     ij.append([i, i])
                     data.append(self._diagonal_value)
+                    ij_exists[self.ij_key(i,i)] = True
                     norms[i] = [k]
                     k += 1
                     i += 1
@@ -67,19 +69,23 @@ class Space(object):
                     uri_index[o] = i
                     ij.append([i, i])
                     data.append(self._diagonal_value)
+                    ij_exists[self.ij_key(i,i)] = True
                     norms[i] = [k]
                     k += 1
                     i += 1
-                if not [uri_index[s], uri_index[o]] in ij:
-                    ij.append([uri_index[s], uri_index[o]])
+                m, n = uri_index[s], uri_index[o]
+                if not ij_exists.has_key(self.ij_key(m,n)):
+                    ij.append([m, n])
                     data.append(self._adjacency_value)
-                    norms[uri_index[o]].append(k)
+                    ij_exists[self.ij_key(m,n)] = True
+                    norms[n].append(k)
                     k += 1
                 if not self._ignore_inverse:
-                    if not [uri_index[o], uri_index[s]] in ij:
-                        ij.append([uri_index[o], uri_index[s]])
+                    if not ij_exists.has_key(self.ij_key(n,m)):
+                        ij.append([n, m])
                         data.append(self._adjacency_value)
-                        norms[uri_index[s]].append(k)
+                        ij_exists[self.ij_key(n,m)] = True
+                        norms[m].append(k)
                         k += 1
             z += 1
             if z % 100000 == 0:
@@ -100,6 +106,9 @@ class Space(object):
         ij = ij.T
         self.uri_index = uri_index
         self._adjacency = csc_matrix((data, ij), shape=(i,i))
+
+    def ij_key(self, i, j):
+        return str(i) + '!' + str(j)
 
     def projections(self):
         if self._ut == None:
