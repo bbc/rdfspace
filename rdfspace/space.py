@@ -11,7 +11,7 @@ import os
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=True, adjacency_value=1.0, diagonal_value=10.0):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
@@ -70,16 +70,17 @@ class Space(object):
                     norms[i] = [k]
                     k += 1
                     i += 1
-                ij.append([uri_index[s], uri_index[o]])
-                if not self._ignore_inverse:
-                    ij.append([uri_index[o], uri_index[s]])
-                    norms[uri_index[o]].append(k)
-                data.append(self._adjacency_value)
-                k += 1
-                if not self._ignore_inverse:
-                    norms[uri_index[s]].append(k)
+                if not [uri_index[s], uri_index[o]] in ij:
+                    ij.append([uri_index[s], uri_index[o]])
                     data.append(self._adjacency_value)
+                    norms[uri_index[o]].append(k)
                     k += 1
+                if not self._ignore_inverse:
+                    if not [uri_index[o], uri_index[s]] in ij:
+                        ij.append([uri_index[o], uri_index[s]])
+                        data.append(self._adjacency_value)
+                        norms[uri_index[s]].append(k)
+                        k += 1
             z += 1
             if z % 100000 == 0:
                 print "Processed " + str(z) + " triples..."
@@ -87,7 +88,7 @@ class Space(object):
         print "Normalising..."
         for m in norms.keys():
             values = [ self._adjacency_value for x in range(0, len(norms[m]) - 1) ]
-            values.append(self._diagonal_value)
+            values.append(self._diagonal_value) # One diagonal value per column, the rest are norms
             p = 1.0 / norm(values)
             # should I switch to Log Entropy weighting functions?
             # norm = (1 + p * log(p) * i / log(i))
