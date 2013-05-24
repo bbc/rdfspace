@@ -11,7 +11,7 @@ import os
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0, normalisation='norm'):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
@@ -20,6 +20,7 @@ class Space(object):
         self._adjacency_value = adjacency_value
         self._diagonal_value = diagonal_value
         self._ignore_inverse = ignore_inverse
+        self._normalisation = normalisation
         self._adjacency  = None
         self.uri_index = None
         self._ut = None
@@ -91,15 +92,21 @@ class Space(object):
             if z % 100000 == 0:
                 print "Processed " + str(z) + " triples..."
 
-        print "Normalising..."
-        for m in norms.keys():
-            values = [ self._adjacency_value for x in range(0, len(norms[m]) - 1) ]
-            values.append(self._diagonal_value) # One diagonal value per column, the rest are norms
-            p = 1.0 / norm(values)
-            # should I switch to Log Entropy weighting functions?
-            # norm = (1 + p * log(p) * i / log(i))
-            for n in norms[m]:
-                data[n] = data[n] * p # log(data[n] + 1) * norm
+        if self._normalisation in ['norm', 'logentropy']:
+            print "Normalising..."
+            for m in norms.keys():
+                values = [ self._adjacency_value for x in range(0, len(norms[m]) - 1) ]
+                values.append(self._diagonal_value) # One diagonal value per column, the rest are adjacencies
+                p = 1.0 / norm(values)
+                if self._normalisation == 'norm':
+                    for n in norms[m]:
+                        data[n] = data[n] * p
+                elif self._normalisation == 'logentropy':
+                    p = (1 + p * log(p) * i / log(i))
+                    for n in norms[m]:
+                        data[n] = data[n] * log(data[n] + 1) * p
+        else:
+            print "Skipping normalisation..."
 
         data = array(data)
         ij = array(ij)
