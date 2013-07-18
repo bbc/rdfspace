@@ -131,12 +131,12 @@ class Space(object):
             return 0
         return dot(v1, v2.T) / (norm(v1) * norm(v2))
 
-    def distance_ij(self, i, j):
+    def similarity_ij(self, i, j):
         projections = self.projections()
         return self.cosine(projections[i], projections[j])
 
-    def distance(self, uri_1, uri_2):
-        return self.distance_ij(self.uri_index[uri_1], self.uri_index[uri_2])
+    def similarity(self, uri_1, uri_2):
+        return self.similarity_ij(self.uri_index[uri_1], self.uri_index[uri_2])
 
     def centroid_ij(self, indexes):
         if not indexes:

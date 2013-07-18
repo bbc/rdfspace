@@ -55,17 +55,17 @@ def test_to_vector():
     rdf_space = Space('tests/example.n3', rank=2)
     assert_equal(rdf_space.to_vector('http://dbpedia.org/resource/Category:Futurama').shape, (2,))
 
-def test_distance():
+def test_similarity():
     rdf_space = Space('tests/example.n3')
     # Overriding _ut
     rdf_space._ut = np.array([[0,1,0,0],[1,0,0,0],[0,1,0,0],[1,1,1,1]], dtype=float).T
     # Overriding uri_index
     rdf_space.uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
 
-    assert_equal(rdf_space.distance('http://0', 'http://0'), 1.0)
-    assert_equal(rdf_space.distance('http://0', 'http://1'), 0)
-    assert_equal(rdf_space.distance('http://0', 'http://2'), 1.0)
-    assert_equal(rdf_space.distance('http://0', 'http://3'), 0.5)
+    assert_equal(rdf_space.similarity('http://0', 'http://0'), 1.0)
+    assert_equal(rdf_space.similarity('http://0', 'http://1'), 0)
+    assert_equal(rdf_space.similarity('http://0', 'http://2'), 1.0)
+    assert_equal(rdf_space.similarity('http://0', 'http://3'), 0.5)
 
 def test_centroid():
     rdf_space = Space('tests/example.n3')
