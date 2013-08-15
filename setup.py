@@ -13,9 +13,8 @@ setup(
     author_email='yves.raimond@bbc.co.uk',
     packages=['rdfspace'],
     install_requires=[
-        'numpy',
         'scipy',
-        'RDF',
         'sparsesvd',
+        'cython',
     ],
 )

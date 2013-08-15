@@ -7,13 +7,18 @@ For example it is possible to process large sections of DBpedia on a commodity l
 Getting started
 ---------------
 
-Running the tests:
+Setting up:
 
-    $ nosetests
+    $ apt-get install python-pip python-librdf python-numpy python-scipy python-nose
 
 Installing:
  
     $ python setup.py install
+    # (You might have to run that twice to get around https://github.com/piskvorky/sparsesvd/pull/4)
+
+Running the tests:
+
+    $ nosetests
 
 Example use
 -----------
