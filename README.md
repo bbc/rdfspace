@@ -46,3 +46,8 @@ Licensing terms and authorship
 ------------------------------
 
 See 'COPYING' and 'AUTHORS' files.
+
+All code here, except where otherwise indicated, is licensed under
+the GNU Affero General Public License version 3. This license includes
+many restrictions. If this causes a problem, please contact us.
+See "AUTHORS" for contact details.
