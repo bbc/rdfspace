@@ -22,7 +22,7 @@ from sparsesvd import sparsesvd
 from numpy.linalg import *
 from operator import itemgetter
 import RDF
-import pickle
+import cPickle as pickle
 import os
 
 class Space(object):
