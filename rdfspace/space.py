@@ -24,10 +24,11 @@ from operator import itemgetter
 import RDF
 import cPickle as pickle
 import os
+import re
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0, normalisation='norm'):
+    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0, normalisation='norm', prefix = 'http://dbpedia.org/resource/'):
         self._path_to_rdf = 'file:' + path_to_rdf
         self._format = format
         self._ignored_predicates = ignored_predicates
@@ -37,8 +38,11 @@ class Space(object):
         self._diagonal_value = diagonal_value
         self._ignore_inverse = ignore_inverse
         self._normalisation = normalisation
+        self._prefix = prefix
+        self._escaped_prefix = re.escape(prefix)
         self._adjacency  = None
-        self.uri_index = None
+        self._uri_index = None
+        self._index_uri = None
         self._ut = None
         self._s = None
         self._vt = None
@@ -49,13 +53,14 @@ class Space(object):
 
     def generate_vector_space(self):
         """Generate a vector space from an RDF file"""
-        if self._adjacency != None and self.uri_index != None:
+        if self._adjacency != None and self._uri_index != None and self._index_uri != None:
             return
 
         parser = RDF.Parser(name=self._format)
         stream = parser.parse_as_stream(self._path_to_rdf)
 
         uri_index = {}
+        index_uri = {}
         data = []
         ij = []
         norms = {}
@@ -71,12 +76,17 @@ class Space(object):
                     s = str(statement.subject)
                 else:
                     s = str(statement.subject.uri)
+                    if self._escaped_prefix:
+                        s = re.sub('^' + self._escaped_prefix, '^', s)
                 if statement.object.is_blank():
                     o = str(statement.object)
                 else:
                     o = str(statement.object.uri)
+                    if self._escaped_prefix:
+                        o = re.sub('^' + self._escaped_prefix, '^', o)
                 if not uri_index.has_key(s):
                     uri_index[s] = i
+                    index_uri[i] = s
                     ij.append([i, i])
                     data.append(self._diagonal_value)
                     ij_exists[self.ij_key(i,i)] = True
@@ -85,6 +95,7 @@ class Space(object):
                     i += 1
                 if not uri_index.has_key(o):
                     uri_index[o] = i
+                    index_uri[i] = o
                     ij.append([i, i])
                     data.append(self._diagonal_value)
                     ij_exists[self.ij_key(i,i)] = True
@@ -128,7 +139,8 @@ class Space(object):
         data = array(data)
         ij = array(ij)
         ij = ij.T
-        self.uri_index = uri_index
+        self._uri_index = uri_index
+        self._index_uri = index_uri
         self._adjacency = csc_matrix((data, ij), shape=(i,i))
 
     def ij_key(self, i, j):
@@ -143,7 +155,22 @@ class Space(object):
 
     def index(self, uri):
         """Index of an URI"""
-        return self.uri_index[uri]
+        if self._escaped_prefix:
+            uri = re.sub('^' + self._escaped_prefix, '^', uri)
+        if self._uri_index.has_key(uri):
+            return self._uri_index[uri]
+        else:
+            return None
+
+    def uri(self, index):
+        """Uri corresponding to an index"""
+        if self._index_uri.has_key(index):
+            uri = self._index_uri[index]
+            if self._prefix:
+                uri = re.sub('^\^', self._prefix, uri)
+            return uri
+        else:
+            return None
 
     def cosine(self, v1, v2):
         """Cosine similarity between two vectors"""
@@ -158,7 +185,7 @@ class Space(object):
 
     def similarity(self, uri_1, uri_2):
         """Cosine similarity between two URIs"""
-        return self.similarity_ij(self.uri_index[uri_1], self.uri_index[uri_2])
+        return self.similarity_ij(self.index(uri_1), self.index(uri_2))
 
     def centroid_ij(self, indexes):
         """Get the centroid of a set of indexes"""
@@ -174,13 +201,14 @@ class Space(object):
         indexes = []
         for uri in uris:
             # We drop URIs we don't know about
-            if self.uri_index.has_key(uri):
-                indexes.append(self.uri_index[uri])
+            index = self.index(uri)
+            if index is not None:
+                indexes.append(index)
         return self.centroid_ij(indexes)
 
     def to_vector(self, uri):
         """Get the vector associated with the given URI"""
-        return self.projections()[self.uri_index[uri]]
+        return self.projections()[self.index(uri)]
 
     def centrality(self, uri):
         """Eigenvector centrality of the given URI"""
@@ -188,14 +216,12 @@ class Space(object):
 
     def similar(self, uri, limit=10):
         """Most similar URIs to a given URI"""
-        projected = self.projections()
         similarities = {}
-        v = projected[self.uri_index[uri]]
-        for key in self.uri_index.keys():
-            similarities[key] = self.cosine(v, projected[self.uri_index[key]])
-        similarities = sorted(similarities.items(), key=itemgetter(1))
-        similarities.reverse()
-        return similarities[0:limit]
+        v = self.to_vector(uri)
+        dot_products = dot(self.projections(), v)
+        norms = np.sum(np.abs(self.projections())**2,axis=-1)**(1./2) * norm(v)
+        similarities = dot_products / norms
+        return [ (self.uri(index), similarities[index]) for index in similarities.argsort()[-limit:][::-1] ]
 
     def save(self, dirname):
         """Save the current rdfspace to a directory"""

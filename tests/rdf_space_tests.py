@@ -27,12 +27,12 @@ def test_init():
     assert_equal(rdf_space._format, 'ntriples')
     assert_equal(rdf_space._ignored_predicates, ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'])
     assert_equal(rdf_space._predicates, None)
-    assert_equal(rdf_space.uri_index, {
-        'http://dbpedia.org/resource/Category:Star_Trek': 0,
-        'http://dbpedia.org/resource/Category:Categories_named_after_television_series': 1,
-        'http://dbpedia.org/resource/Category:Futurama': 2,
-        'http://dbpedia.org/resource/Category:New_York_City_in_fiction': 3,
-        'http://dbpedia.org/resource/Category:Comic_science_fiction': 4,
+    assert_equal(rdf_space._uri_index, {
+        '^Category:Star_Trek': 0,
+        '^Category:Categories_named_after_television_series': 1,
+        '^Category:Futurama': 2,
+        '^Category:New_York_City_in_fiction': 3,
+        '^Category:Comic_science_fiction': 4,
     })
     assert_equal(rdf_space._adjacency_value, 1.0)
     assert_equal(rdf_space._diagonal_value, 10.0)
@@ -67,6 +67,10 @@ def test_index():
     rdf_space = Space('tests/example.n3')
     assert_equal(rdf_space.index('http://dbpedia.org/resource/Category:Futurama'), 2)
 
+def test_uri():
+    rdf_space = Space('tests/example.n3')
+    assert_equal(rdf_space.uri(2), 'http://dbpedia.org/resource/Category:Futurama')
+
 def test_to_vector():
     rdf_space = Space('tests/example.n3', rank=2)
     assert_equal(rdf_space.to_vector('http://dbpedia.org/resource/Category:Futurama').shape, (2,))
@@ -76,7 +80,7 @@ def test_similarity():
     # Overriding _ut
     rdf_space._ut = np.array([[0,1,0,0],[1,0,0,0],[0,1,0,0],[1,1,1,1]], dtype=float).T
     # Overriding uri_index
-    rdf_space.uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
+    rdf_space._uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
 
     assert_equal(rdf_space.similarity('http://0', 'http://0'), 1.0)
     assert_equal(rdf_space.similarity('http://0', 'http://1'), 0)
@@ -88,7 +92,7 @@ def test_centrality():
     # Overriding _ut
     rdf_space._ut = np.array([[0,1,0,0],[1,0,0,0],[2,1,0,0],[3,1,1,1]], dtype=float).T
     # Overriding uri_index
-    rdf_space.uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
+    rdf_space._uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
 
     assert_equal(rdf_space.centrality('http://0'), 0)
     assert_equal(rdf_space.centrality('http://1'), 1)
@@ -100,7 +104,7 @@ def test_centroid():
     # Overriding _ut
     rdf_space._ut = np.array([[0,1,0,0],[1,0,0,0],[0,1,0,0],[1,1,1,1]], dtype=float).T
     # Overriding uri_index
-    rdf_space.uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
+    rdf_space._uri_index = {'http://0': 0, 'http://1': 1, 'http://2': 2, 'http://3': 3}
 
     centroid = rdf_space.centroid(['http://0', 'http://1', 'http://2', 'http://3'])
     assert_array_equal(centroid, np.array([0.5, 0.75, 0.25, 0.25]))
@@ -112,6 +116,15 @@ def test_centroid():
     assert_array_equal(centroid, np.array([0, 1, 0, 0]))
     centroid = rdf_space.centroid([])
     assert_array_equal(centroid, None)
+
+def test_similar():
+    rdf_space = Space('tests/example.n3')
+    similar = rdf_space.similar('http://dbpedia.org/resource/Category:Futurama', 2)
+    assert_equal(len(similar), 2)
+    assert_equal(similar[0][0], 'http://dbpedia.org/resource/Category:Futurama')
+    assert_equal(similar[0][1], 1.0)
+    assert_equal(similar[1][0], 'http://dbpedia.org/resource/Category:New_York_City_in_fiction')
+    assert_equal(similar[1][1], rdf_space.similarity('http://dbpedia.org/resource/Category:Futurama', 'http://dbpedia.org/resource/Category:New_York_City_in_fiction'))
 
 def test_save_and_load():
     rdf_space = Space('tests/example.n3')
@@ -126,7 +139,7 @@ def test_save_and_load():
     assert_array_equal(rdf_space._adjacency, adj)
 
     space = Space.load('tests/example-space')
-    assert_equal(space.uri_index, rdf_space.uri_index)
+    assert_equal(space._uri_index, rdf_space._uri_index)
     assert_equal(space._ut[2,3], rdf_space._ut[2,3])
     assert_equal(space._s[2,2], rdf_space._s[2,2])
     assert_equal(space._vt[2,3], rdf_space._vt[2,3])
