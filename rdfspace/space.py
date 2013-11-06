@@ -48,6 +48,7 @@ class Space(object):
         self.projections()
 
     def generate_vector_space(self):
+        """Generate a vector space from an RDF file"""
         if self._adjacency != None and self.uri_index != None:
             return
 
@@ -134,33 +135,40 @@ class Space(object):
         return str(i) + '!' + str(j)
 
     def projections(self):
+        """Get the set of vectors for all URIs"""
         if self._ut is None:
             self._ut, self._s, self._vt = sparsesvd(self._adjacency, self._rank) 
             (self._ut_shape, self._s_shape, self._vt_shape) = (self._ut.shape, self._s.shape, self._vt.shape)
         return self._ut.T
 
     def index(self, uri):
+        """Index of an URI"""
         return self.uri_index[uri]
 
     def cosine(self, v1, v2):
+        """Cosine similarity between two vectors"""
         if norm(v1) == 0 or norm(v2) == 0:
             return 0
         return dot(v1, v2.T) / (norm(v1) * norm(v2))
 
     def similarity_ij(self, i, j):
+        """Cosine similarity between two indexes"""
         projections = self.projections()
         return self.cosine(projections[i], projections[j])
 
     def similarity(self, uri_1, uri_2):
+        """Cosine similarity between two URIs"""
         return self.similarity_ij(self.uri_index[uri_1], self.uri_index[uri_2])
 
     def centroid_ij(self, indexes):
+        """Get the centroid of a set of indexes"""
         if not indexes:
             return None
         projections = self.projections()
         return np.mean(projections[indexes], 0)
 
     def centroid(self, uris):
+        """Get the centroid of a set of URIs"""
         if not uris:
             return None
         indexes = []
@@ -171,12 +179,15 @@ class Space(object):
         return self.centroid_ij(indexes)
 
     def to_vector(self, uri):
+        """Get the vector associated with the given URI"""
         return self.projections()[self.uri_index[uri]]
 
     def centrality(self, uri):
+        """Eigenvector centrality of the given URI"""
         return self.to_vector(uri)[0]
 
     def similar(self, uri, limit=10):
+        """Most similar URIs to a given URI"""
         projected = self.projections()
         similarities = {}
         v = projected[self.uri_index[uri]]
@@ -187,6 +198,7 @@ class Space(object):
         return similarities[0:limit]
 
     def save(self, dirname):
+        """Save the current rdfspace to a directory"""
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         # We memmap big matrices, as pickle eats the whole RAM
@@ -206,6 +218,7 @@ class Space(object):
 
     @staticmethod
     def load(dirname):
+        """Load an rdfspace instance from a directory"""
         if os.path.exists(dirname):
             f = open(os.path.join(dirname, 'space.dat'))
             space = pickle.load(f)
