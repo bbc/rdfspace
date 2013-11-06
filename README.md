@@ -2,7 +2,9 @@ RDFSpace
 ========
 
 This Python library helps generating a low-dimensional vector space from very large RDF graphs in a reasonable time.
-For example it is possible to process large sections of DBpedia on a commodity laptop.
+For example it is possible to process large sections of DBpedia on a commodity laptop. Once this
+space is generated, it can be used to compute fast similarities between URIs, or to compute
+the Eigenvector Centrality (~pagerank) of URIs.
 
 Getting started
 ---------------
@@ -19,6 +21,10 @@ Installing:
 Running the tests:
 
     $ nosetests
+
+Or from pypi:
+
+    $ pip install rdfspace
 
 Example use
 -----------
