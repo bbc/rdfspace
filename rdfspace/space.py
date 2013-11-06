@@ -25,11 +25,13 @@ import RDF
 import cPickle as pickle
 import os
 import re
+import dbm
 
 class Space(object):
 
-    def __init__(self, path_to_rdf, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0, normalisation='norm', prefix = 'http://dbpedia.org/resource/'):
+    def __init__(self, path_to_rdf, index_dir = None, format='ntriples', ignored_predicates=['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'], predicates=None, rank=50, ignore_inverse=False, adjacency_value=1.0, diagonal_value=10.0, normalisation='norm', prefix = 'http://dbpedia.org/resource/'):
         self._path_to_rdf = 'file:' + path_to_rdf
+        self._index_dir = index_dir
         self._format = format
         self._ignored_predicates = ignored_predicates
         self._predicates = predicates
@@ -59,8 +61,15 @@ class Space(object):
         parser = RDF.Parser(name=self._format)
         stream = parser.parse_as_stream(self._path_to_rdf)
 
-        uri_index = {}
-        index_uri = {}
+        if self._index_dir is None:
+            uri_index = {}
+            index_uri = {}
+        else:
+            if not os.path.exists(self._index_dir):
+                os.makedirs(self._index_dir)
+            uri_index = dbm.open(os.path.join(self._index_dir, 'uri_index'), 'n')
+            index_uri = dbm.open(os.path.join(self._index_dir, 'index_uri'), 'n')
+
         data = []
         ij = []
         norms = {}
@@ -85,8 +94,8 @@ class Space(object):
                     if self._escaped_prefix:
                         o = re.sub('^' + self._escaped_prefix, '^', o)
                 if not uri_index.has_key(s):
-                    uri_index[s] = i
-                    index_uri[i] = s
+                    uri_index[s] = str(i)
+                    index_uri[str(i)] = s
                     ij.append([i, i])
                     data.append(self._diagonal_value)
                     ij_exists[self.ij_key(i,i)] = True
@@ -94,15 +103,15 @@ class Space(object):
                     k += 1
                     i += 1
                 if not uri_index.has_key(o):
-                    uri_index[o] = i
-                    index_uri[i] = o
+                    uri_index[o] = str(i)
+                    index_uri[str(i)] = o
                     ij.append([i, i])
                     data.append(self._diagonal_value)
                     ij_exists[self.ij_key(i,i)] = True
                     norms[i] = [k]
                     k += 1
                     i += 1
-                m, n = uri_index[s], uri_index[o]
+                m, n = int(uri_index[s]), int(uri_index[o])
                 if not ij_exists.has_key(self.ij_key(m,n)):
                     ij.append([m, n])
                     data.append(self._adjacency_value)
@@ -158,12 +167,13 @@ class Space(object):
         if self._escaped_prefix:
             uri = re.sub('^' + self._escaped_prefix, '^', uri)
         if self._uri_index.has_key(uri):
-            return self._uri_index[uri]
+            return int(self._uri_index[uri])
         else:
             return None
 
     def uri(self, index):
         """Uri corresponding to an index"""
+        index = str(index)
         if self._index_uri.has_key(index):
             uri = self._index_uri[index]
             if self._prefix:
@@ -223,8 +233,10 @@ class Space(object):
         similarities = dot_products / norms
         return [ (self.uri(index), similarities[index]) for index in similarities.argsort()[-limit:][::-1] ]
 
-    def save(self, dirname):
-        """Save the current rdfspace to a directory"""
+    def save(self, dirname = None):
+        """Save the current rdfspace to a directory (by default the directory in which indexes are stored)"""
+        if dirname is None and self._index_dir is not None:
+            dirname = self._index_dir
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         # We memmap big matrices, as pickle eats the whole RAM
@@ -235,12 +247,22 @@ class Space(object):
         s_m[:] = self._s[:]
         vt_m = np.memmap(os.path.join(dirname, 'vt.dat'), dtype='float64', mode='w+', shape=self._vt_shape)
         vt_m[:] = self._vt[:]
-        (adjacency, ut, s, vt) = (self._adjacency, self._ut, self._s, self._vt)
-        (self._adjacency, self._ut, self._s, self._vt) = (None, None, None, None)
-        f = open(os.path.join(dirname, 'space.dat'), 'w')
-        pickle.dump(self, f)
-        f.close()
-        (self._adjacency, self._ut, self._s, self._vt) = (adjacency, ut, s, vt)
+        if self._index_dir is None:
+            # The index is in memory, we'll pickle it with the rest
+            (adjacency, ut, s, vt) = (self._adjacency, self._ut, self._s, self._vt)
+            (self._adjacency, self._ut, self._s, self._vt) = (None, None, None, None)
+            f = open(os.path.join(dirname, 'space.dat'), 'w')
+            pickle.dump(self, f)
+            f.close()
+            (self._adjacency, self._ut, self._s, self._vt) = (adjacency, ut, s, vt)
+        else:
+            # The index is stored in dbm, we will exclude it from the pickle
+            (adjacency, ut, s, vt, uri_index, index_uri) = (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri)
+            (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri) = (None, None, None, None, None, None)
+            f = open(os.path.join(dirname, 'space.dat'), 'w')
+            pickle.dump(self, f)
+            f.close()
+            (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri) = (adjacency, ut, s, vt, uri_index, index_uri)
 
     @staticmethod
     def load(dirname):
@@ -252,6 +274,11 @@ class Space(object):
             space._ut = np.memmap(os.path.join(dirname, 'ut.dat'), dtype='float64', mode='r', shape=space._ut_shape)
             space._s = np.memmap(os.path.join(dirname, 's.dat'), dtype='float64', mode='r', shape=space._s_shape)
             space._vt = np.memmap(os.path.join(dirname, 'vt.dat'), dtype='float64', mode='r', shape=space._vt_shape)
+            if os.path.exists(os.path.join(dirname, 'uri_index.db')) and os.path.exists(os.path.join(dirname, 'index_uri.db')):
+                # If these files exist the index are stored through dbm
+                # If not the indexes will be coming from the pickle
+                space._uri_index = dbm.open(os.path.join(dirname, 'uri_index'), 'r')
+                space._index_uri = dbm.open(os.path.join(dirname, 'index_uri'), 'r')
             return space
         else:
             raise Exception('No such directory')

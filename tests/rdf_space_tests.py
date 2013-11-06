@@ -20,7 +20,16 @@ from numpy.linalg import *
 from numpy.testing import *
 import rdfspace
 from rdfspace.space import Space
+import shutil, os
 
+def setup_func():
+    pass
+
+def teardown_func():
+    if os.path.exists('tests/example-space'):
+        shutil.rmtree('tests/example-space')
+
+@with_setup(setup_func, teardown_func)
 def test_init():
     rdf_space = Space('tests/example.n3', ignore_inverse=False)
     assert_equal(rdf_space._path_to_rdf, 'file:tests/example.n3')
@@ -28,11 +37,18 @@ def test_init():
     assert_equal(rdf_space._ignored_predicates, ['http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://xmlns.com/foaf/0.1/homepage'])
     assert_equal(rdf_space._predicates, None)
     assert_equal(rdf_space._uri_index, {
-        '^Category:Star_Trek': 0,
-        '^Category:Categories_named_after_television_series': 1,
-        '^Category:Futurama': 2,
-        '^Category:New_York_City_in_fiction': 3,
-        '^Category:Comic_science_fiction': 4,
+        '^Category:Star_Trek': '0',
+        '^Category:Categories_named_after_television_series': '1',
+        '^Category:Futurama': '2',
+        '^Category:New_York_City_in_fiction': '3',
+        '^Category:Comic_science_fiction': '4',
+    })
+    assert_equal(rdf_space._index_uri, {
+        '0': '^Category:Star_Trek',
+        '1': '^Category:Categories_named_after_television_series',
+        '2': '^Category:Futurama',
+        '3': '^Category:New_York_City_in_fiction',
+        '4': '^Category:Comic_science_fiction'
     })
     assert_equal(rdf_space._adjacency_value, 1.0)
     assert_equal(rdf_space._diagonal_value, 10.0)
@@ -62,6 +78,18 @@ def test_init():
     assert_equal(rdf_space._adjacency[4,2], 1/np.sqrt(10 ** 2 + 3))
     assert_equal(rdf_space._adjacency[4,3], 0)
     assert_equal(rdf_space._adjacency[4,4], 10/np.sqrt(10 ** 2 + 1))
+
+@with_setup(setup_func, teardown_func)
+def test_init_with_dbm():
+    rdf_space = Space('tests/example.n3', index_dir = 'tests/example-space')
+    uris = rdf_space._uri_index.keys()
+    indexes = rdf_space._index_uri.keys()
+    assert(os.path.isfile('tests/example-space/uri_index.db'))
+    assert(os.path.isfile('tests/example-space/index_uri.db'))
+    rdf_space.save()
+    rdf_space = Space.load('tests/example-space')
+    assert_equal(rdf_space._uri_index.keys(), uris)
+    assert_equal(rdf_space._index_uri.keys(), indexes)
 
 def test_index():
     rdf_space = Space('tests/example.n3')
@@ -126,6 +154,7 @@ def test_similar():
     assert_equal(similar[1][0], 'http://dbpedia.org/resource/Category:New_York_City_in_fiction')
     assert_equal(similar[1][1], rdf_space.similarity('http://dbpedia.org/resource/Category:Futurama', 'http://dbpedia.org/resource/Category:New_York_City_in_fiction'))
 
+@with_setup(setup_func, teardown_func)
 def test_save_and_load():
     rdf_space = Space('tests/example.n3')
     rdf_space._ut = np.random.rand(5, 5)
