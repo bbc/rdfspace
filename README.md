@@ -33,6 +33,7 @@ Example use
     >>> space.centrality('http://dbpedia.org/resource/JavaScript')
     >>> space.similarity('http://dbpedia.org/resource/Albert_Camus', 'http://dbpedia.org/resource/JavaScript')
     >>> space.centrality('http://dbpedia.org/resource/Albert_Camus')
+    >>> space.similar('http://dbpedia.org/resource/Albert_Camus')
 
 How it works
 ------------
