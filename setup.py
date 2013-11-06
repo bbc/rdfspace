@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='rdfspace',
-    version='0.0.2',
+    version='0.0.3',
     description="""RDFSpace constructs a vector space 
                  from any RDF dataset which can be used for 
                  computing similarities between resources 
