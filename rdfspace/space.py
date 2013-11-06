@@ -134,7 +134,7 @@ class Space(object):
         return str(i) + '!' + str(j)
 
     def projections(self):
-        if self._ut == None:
+        if self._ut is None:
             self._ut, self._s, self._vt = sparsesvd(self._adjacency, self._rank) 
             (self._ut_shape, self._s_shape, self._vt_shape) = (self._ut.shape, self._s.shape, self._vt.shape)
         return self._ut.T
@@ -172,6 +172,9 @@ class Space(object):
 
     def to_vector(self, uri):
         return self.projections()[self.uri_index[uri]]
+
+    def centrality(self, uri):
+        return self.to_vector(uri)[0]
 
     def similar(self, uri, limit=10):
         projected = self.projections()
