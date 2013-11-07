@@ -256,13 +256,18 @@ class Space(object):
             f.close()
             (self._adjacency, self._ut, self._s, self._vt) = (adjacency, ut, s, vt)
         else:
+            # Flushing indexes
+            self._uri_index.close()
+            self._index_uri.close()
             # The index is stored in dbm, we will exclude it from the pickle
-            (adjacency, ut, s, vt, uri_index, index_uri) = (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri)
+            (adjacency, ut, s, vt) = (self._adjacency, self._ut, self._s, self._vt)
             (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri) = (None, None, None, None, None, None)
             f = open(os.path.join(dirname, 'space.dat'), 'w')
             pickle.dump(self, f)
             f.close()
-            (self._adjacency, self._ut, self._s, self._vt, self._uri_index, self._index_uri) = (adjacency, ut, s, vt, uri_index, index_uri)
+            (self._adjacency, self._ut, self._s, self._vt) = (adjacency, ut, s, vt)
+            self._uri_index = dbm.open(os.path.join(dirname, 'uri_index'), 'r')
+            self._index_uri = dbm.open(os.path.join(dirname, 'index_uri'), 'r')
 
     @staticmethod
     def load(dirname):
