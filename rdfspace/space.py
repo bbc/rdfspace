@@ -228,7 +228,7 @@ class Space(object):
 
     def centrality(self, uri):
         """Eigenvector centrality of the given URI"""
-        return self.to_vector(uri)[0]
+        return np.abs(self.to_vector(uri)[0])
 
     def similar(self, uri, limit=10):
         """Most similar URIs to a given URI"""
