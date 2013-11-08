@@ -94,6 +94,8 @@ def test_init_with_dbm():
 def test_index():
     rdf_space = Space('tests/example.n3')
     assert_equal(rdf_space.index('http://dbpedia.org/resource/Category:Futurama'), 2)
+    assert(rdf_space.has_index('http://dbpedia.org/resource/Category:Futurama'))
+    assert(not rdf_space.has_index('http://dbpedia.org/resource/Foo'))
 
 def test_uri():
     rdf_space = Space('tests/example.n3')

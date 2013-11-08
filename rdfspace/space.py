@@ -171,6 +171,12 @@ class Space(object):
         else:
             return None
 
+    def has_index(self, uri):
+        """ Does the URI exist in that space?"""
+        if self._escaped_prefix:
+            uri = re.sub('^' + self._escaped_prefix, '^', uri)
+        return self._uri_index.has_key(uri)
+
     def uri(self, index):
         """Uri corresponding to an index"""
         index = str(index)
